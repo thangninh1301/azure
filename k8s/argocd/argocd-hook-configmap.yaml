@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-hook
+  namespace: bali-stag
+data:
+  send.sh: |
+    #!/bin/sh
+    set -x
+    TOKEN=5377232
+    CHAT_ID=-7450
+    if [ -z "$GIT_COMMIT_MESSAGE" ]; then
+      COMMIT_MESSAGE="updated"
+    else
+      COMMIT_MESSAGE=`echo $GIT_COMMIT_MESSAGE`
+    fi
+    if [ $ACTION = "PreSync" ]; then
+      MSG="➡ FOTA Deploying..."
+    else
+      MSG="✅ FOTA Deploy completed!"
+    fi
+    UNDER_APP_NAME=`echo $APP_NAME | tr '-' '_'`
+    MESSAGE="${MSG}: *#${UNDER_APP_NAME}*
+    GitUser ${COMMIT_MESSAGE}
+    Version: *${APP_VERSION}*
+    Env: *#ba2-sea-k8s*"
+    URL="https://api.telegram.org/bot$TOKEN/sendMessage?parse_mode=markdown"
+
+    curl -s -X POST $URL -d chat_id=$CHAT_ID --data-urlencode "text=$MESSAGE"
